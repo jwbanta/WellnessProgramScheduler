@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wellness-program-scheduler"
+version = "0.1.0"
+description = "Fair constraint-satisfaction class scheduling and attendee assignment engine with Mail Merge export"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "mcbam", email = "mcbam99@gmail.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+optimizer = [
+    "pulp>=2.7.0",
+]
+
+[project.scripts]
+wellness-scheduler = "scheduler.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scheduler*"]

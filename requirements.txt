@@ -1,0 +1,3 @@
+# Core scheduler has 0 mandatory external dependencies (pure standard library Python)
+# Optional dependencies:
+pytest>=7.0.0
