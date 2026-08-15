@@ -1,0 +1,36 @@
+attendee_id,name,email,max_classes,preference_1,preference_2,preference_3,preference_4
+ATT_001,Sophia Taylor,sophia.taylor@example.com,3,Closing Sound Ceremony,Mindful Nature Walk,Functional HIIT & Core,Sound Bath Deep Relaxation
+ATT_002,Liam Smith,liam.smith@example.com,3,Sound Bath Deep Relaxation,Mobility & Posture Workshop,Functional HIIT & Core,Guided Aromatherapy & Nidra
+ATT_003,Olivia Johnson,olivia.johnson@example.com,3,Morning Vinyasa Yoga,Guided Aromatherapy & Nidra,Mindful Nature Walk,Sound Bath Deep Relaxation
+ATT_004,Noah Williams,noah.williams@example.com,3,Mobility & Posture Workshop,Pilates Mat Flow,Closing Sound Ceremony,Morning Vinyasa Yoga
+ATT_005,Emma Brown,emma.brown@example.com,3,Pilates Mat Flow,Guided Aromatherapy & Nidra,Breathwork & Meditation,Mindful Nature Walk
+ATT_006,Jackson Jones,jackson.jones@example.com,3,Closing Sound Ceremony,Sound Bath Deep Relaxation,Breathwork & Meditation,Restorative Yin Yoga
+ATT_007,Ava Garcia,ava.garcia@example.com,3,Functional HIIT & Core,Sound Bath Deep Relaxation,Guided Aromatherapy & Nidra,Restorative Yin Yoga
+ATT_008,Aiden Miller,aiden.miller@example.com,3,Sound Bath Deep Relaxation,Guided Aromatherapy & Nidra,Mobility & Posture Workshop,Functional HIIT & Core
+ATT_009,Isabella Davis,isabella.davis@example.com,3,Breathwork & Meditation,Mindful Nature Walk,Sound Bath Deep Relaxation,Guided Aromatherapy & Nidra
+ATT_010,Lucas Rodriguez,lucas.rodriguez@example.com,3,Closing Sound Ceremony,Pilates Mat Flow,Functional HIIT & Core,Mindful Nature Walk
+ATT_011,Mia Martinez,mia.martinez@example.com,3,Guided Aromatherapy & Nidra,Functional HIIT & Core,Mobility & Posture Workshop,Longevity & Nutrition Q&A
+ATT_012,Oliver Hernandez,oliver.hernandez@example.com,3,Morning Vinyasa Yoga,Closing Sound Ceremony,Restorative Yin Yoga,Pilates Mat Flow
+ATT_013,Harper Lopez,harper.lopez@example.com,3,Mindful Nature Walk,Morning Vinyasa Yoga,Sound Bath Deep Relaxation,Closing Sound Ceremony
+ATT_014,Ethan Gonzalez,ethan.gonzalez@example.com,3,Morning Vinyasa Yoga,Closing Sound Ceremony,Mobility & Posture Workshop,Longevity & Nutrition Q&A
+ATT_015,Evelyn Wilson,evelyn.wilson@example.com,3,Longevity & Nutrition Q&A,Guided Aromatherapy & Nidra,Breathwork & Meditation,Restorative Yin Yoga
+ATT_016,Mason Anderson,mason.anderson@example.com,3,Functional HIIT & Core,Longevity & Nutrition Q&A,Mobility & Posture Workshop,Closing Sound Ceremony
+ATT_017,Abigail Thomas,abigail.thomas@example.com,3,Sound Bath Deep Relaxation,Mindful Nature Walk,Closing Sound Ceremony,Breathwork & Meditation
+ATT_018,Logan Taylor,logan.taylor@example.com,3,Closing Sound Ceremony,Mindful Nature Walk,Longevity & Nutrition Q&A,Morning Vinyasa Yoga
+ATT_019,Emily Moore,emily.moore@example.com,3,Pilates Mat Flow,Closing Sound Ceremony,Mobility & Posture Workshop,Functional HIIT & Core
+ATT_020,James Jackson,james.jackson@example.com,3,Closing Sound Ceremony,Restorative Yin Yoga,Longevity & Nutrition Q&A,Functional HIIT & Core
+ATT_021,Ella Martin,ella.martin@example.com,3,Closing Sound Ceremony,Morning Vinyasa Yoga,Mindful Nature Walk,Pilates Mat Flow
+ATT_022,Alexander Lee,alexander.lee@example.com,3,Mobility & Posture Workshop,Functional HIIT & Core,Guided Aromatherapy & Nidra,Pilates Mat Flow
+ATT_023,Avery Perez,avery.perez@example.com,3,Longevity & Nutrition Q&A,Mindful Nature Walk,Functional HIIT & Core,Closing Sound Ceremony
+ATT_024,Benjamin Thompson,benjamin.thompson@example.com,3,Guided Aromatherapy & Nidra,Breathwork & Meditation,Mindful Nature Walk,Pilates Mat Flow
+ATT_025,Scarlett White,scarlett.white@example.com,3,Restorative Yin Yoga,Guided Aromatherapy & Nidra,Morning Vinyasa Yoga,Longevity & Nutrition Q&A
+ATT_026,Henry Harris,henry.harris@example.com,3,Closing Sound Ceremony,Functional HIIT & Core,Restorative Yin Yoga,Sound Bath Deep Relaxation
+ATT_027,Grace Sanchez,grace.sanchez@example.com,3,Functional HIIT & Core,Pilates Mat Flow,Restorative Yin Yoga,Closing Sound Ceremony
+ATT_028,Sebastian Clark,sebastian.clark@example.com,3,Sound Bath Deep Relaxation,Guided Aromatherapy & Nidra,Morning Vinyasa Yoga,Mindful Nature Walk
+ATT_029,Chloe Ramirez,chloe.ramirez@example.com,3,Sound Bath Deep Relaxation,Mindful Nature Walk,Guided Aromatherapy & Nidra,Functional HIIT & Core
+ATT_030,Jack Lewis,jack.lewis@example.com,3,Morning Vinyasa Yoga,Pilates Mat Flow,Guided Aromatherapy & Nidra,Mindful Nature Walk
+ATT_031,Camila Robinson,camila.robinson@example.com,3,Morning Vinyasa Yoga,Mindful Nature Walk,Closing Sound Ceremony,Longevity & Nutrition Q&A
+ATT_032,Daniel Walker,daniel.walker@example.com,3,Morning Vinyasa Yoga,Closing Sound Ceremony,Sound Bath Deep Relaxation,Mindful Nature Walk
+ATT_033,Penelope Young,penelope.young@example.com,3,Guided Aromatherapy & Nidra,Mindful Nature Walk,Longevity & Nutrition Q&A,Breathwork & Meditation
+ATT_034,Matthew Allen,matthew.allen@example.com,3,Mindful Nature Walk,Sound Bath Deep Relaxation,Morning Vinyasa Yoga,Guided Aromatherapy & Nidra
+ATT_035,Riley King,riley.king@example.com,3,Restorative Yin Yoga,Guided Aromatherapy & Nidra,Pilates Mat Flow,Morning Vinyasa Yoga

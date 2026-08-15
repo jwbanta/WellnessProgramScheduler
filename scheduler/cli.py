@@ -42,18 +42,51 @@ def _load_data(classes_path: str, attendees_path: str):
     return classes, attendees
 
 
+def _resolve_input_file(custom_path: Optional[str], input_dir: str, candidate_names: List[str]) -> Optional[str]:
+    """Resolves file path from explicit path, input_dir, or common variations."""
+    if custom_path:
+        return custom_path if os.path.exists(custom_path) else None
+
+    # Check candidate filenames inside input_dir
+    for name in candidate_names:
+        p = os.path.join(input_dir, name)
+        if os.path.exists(p):
+            return p
+
+    # Check fallback directory names (e.g. "input data")
+    alt_dirs = ["input_data", "input data", "data"]
+    for d in alt_dirs:
+        for name in candidate_names:
+            p = os.path.join(d, name)
+            if os.path.exists(p):
+                return p
+
+    return None
+
+
 def handle_run(args: argparse.Namespace) -> int:
     """Handles the 'run' subcommand to execute scheduling and generate exports."""
-    if not os.path.exists(args.classes):
-        print(f"Error: Classes file '{args.classes}' not found.", file=sys.stderr)
-        return 1
-    if not os.path.exists(args.attendees):
-        print(f"Error: Attendees file '{args.attendees}' not found.", file=sys.stderr)
+    input_dir = args.input_dir or "./input_data"
+
+    classes_path = _resolve_input_file(args.classes, input_dir, ["classes.csv", "classes.json", "class_schedule.csv"])
+    attendees_path = _resolve_input_file(args.attendees, input_dir, ["attendees.csv", "attendees.json", "attendee_preferences.csv"])
+
+    if not classes_path:
+        target = args.classes or os.path.join(input_dir, "classes.csv")
+        print(f"❌ Error: Classes file not found at '{target}'.", file=sys.stderr)
+        print(f"   Please place 'classes.csv' in '{input_dir}/' or run 'wellness-scheduler generate-sample' to initialize it.", file=sys.stderr)
         return 1
 
-    print(f"📦 Loading classes from: {args.classes}")
-    print(f"👥 Loading attendees from: {args.attendees}")
-    classes, attendees = _load_data(args.classes, args.attendees)
+    if not attendees_path:
+        target = args.attendees or os.path.join(input_dir, "attendees.csv")
+        print(f"❌ Error: Attendees file not found at '{target}'.", file=sys.stderr)
+        print(f"   Please place 'attendees.csv' in '{input_dir}/' or run 'wellness-scheduler generate-sample' to initialize it.", file=sys.stderr)
+        return 1
+
+    print(f"📁 Input Directory   : {input_dir}")
+    print(f"📦 Loading classes   : {classes_path}")
+    print(f"👥 Loading attendees : {attendees_path}")
+    classes, attendees = _load_data(classes_path, attendees_path)
     print(f"   Loaded {len(classes)} classes and {len(attendees)} attendees.")
 
     # Select scheduling engine
@@ -107,13 +140,13 @@ def handle_run(args: argparse.Namespace) -> int:
 
 def handle_generate_sample(args: argparse.Namespace) -> int:
     """Handles the 'generate-sample' subcommand."""
-    out_dir = args.output_dir
+    out_dir = args.output_dir or "./input_data"
     c_path, a_path = generate_sample_files(out_dir)
     print(f"✨ Sample dataset generated successfully in '{out_dir}':")
     print(f"   • Classes CSV   : {c_path}")
     print(f"   • Attendees CSV : {a_path}")
-    print("\nRun scheduling on this sample data using:")
-    print(f"   wellness-scheduler run --classes {c_path} --attendees {a_path} --output-dir ./results")
+    print("\nRun scheduling using:")
+    print("   wellness-scheduler run")
     return 0
 
 
@@ -159,19 +192,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Command: run
     p_run = subparsers.add_parser("run", help="Run class scheduling and export schedules")
-    p_run.add_argument("--classes", "-c", required=True, help="Path to classes CSV/JSON file")
-    p_run.add_argument("--attendees", "-a", required=True, help="Path to attendees CSV/JSON file")
+    p_run.add_argument("--input-dir", "-i", default="./input_data", help="Directory containing classes.csv and attendees.csv (default: ./input_data)")
+    p_run.add_argument("--classes", "-c", help="Custom path to classes CSV/JSON file (overrides --input-dir)")
+    p_run.add_argument("--attendees", "-a", help="Custom path to attendees CSV/JSON file (overrides --input-dir)")
     p_run.add_argument("--output-dir", "-o", default="./results", help="Directory to save exports (default: ./results)")
     p_run.add_argument("--engine", choices=["fair", "opt"], default="fair", help="Scheduling engine (default: fair)")
     p_run.add_argument("--fill-open-spots", action="store_true", help="Fill remaining open spots after preference rounds")
 
     # Command: generate-sample
-    p_sample = subparsers.add_parser("generate-sample", help="Generate realistic sample CSV datasets")
-    p_sample.add_argument("--output-dir", "-o", default="./sample_data", help="Output directory (default: ./sample_data)")
+    p_sample = subparsers.add_parser("generate-sample", help="Generate sample CSV datasets in input_data folder")
+    p_sample.add_argument("--output-dir", "-o", default="./input_data", help="Output directory (default: ./input_data)")
 
     # Command: send-emails
     p_email = subparsers.add_parser("send-emails", help="Preview or dispatch schedule emails via Mail Merge")
-    p_email.add_argument("--csv", required=True, help="Path to mail_merge_schedules.csv")
+    p_email.add_argument("--csv", default="./results/mail_merge_schedules.csv", help="Path to mail_merge_schedules.csv (default: ./results/mail_merge_schedules.csv)")
     p_email.add_argument("--template-dir", help="Directory containing email_template.txt/.html (defaults to CSV dir)")
     p_email.add_argument("--smtp-config", help="Path to JSON file with SMTP server credentials")
     p_email.add_argument("--preview-dir", default="./previews", help="Directory to write rendered HTML previews")

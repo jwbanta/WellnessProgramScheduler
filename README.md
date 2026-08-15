@@ -29,7 +29,7 @@ Designed for wellness programs, corporate retreats, conferences, and fitness wor
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (CLI)
 
 ### 1. Installation
 
@@ -40,40 +40,37 @@ cd WellnessProgramScheduler
 pip install -e .
 ```
 
-*(Optional: for development and running tests)*:
-```bash
-pip install -e ".[dev]"
-```
-
 ---
 
-### 2. Generate Sample Data
+### 2. Prepare Your Input Data (`input_data/`)
 
-Generate realistic sample classes and attendees CSV files:
+Place your classes and attendees files in the [`input_data/`](file:///Users/mcbam/BamStudios/WellnessProgramScheduler/input_data) folder:
+- `input_data/classes.csv`
+- `input_data/attendees.csv`
+
+Or generate realistic sample data with 1 command:
 ```bash
-wellness-scheduler generate-sample --output-dir ./sample_data
+wellness-scheduler generate-sample
 ```
 
-This creates:
-- `sample_data/classes.csv` (11 wellness classes across 4 timeslot blocks)
-- `sample_data/attendees.csv` (35 attendees with ranked preferences)
+This populates `input_data/classes.csv` and `input_data/attendees.csv`.
 
 ---
 
 ### 3. Run the Scheduler
 
-Execute scheduling with the fair draft algorithm and generate all deliverables:
+Simply execute `wellness-scheduler run`:
 ```bash
-wellness-scheduler run \
-  --classes ./sample_data/classes.csv \
-  --attendees ./sample_data/attendees.csv \
-  --output-dir ./results
+wellness-scheduler run
 ```
+
+*(Optional flags: `--input-dir ./my_folder`, `--output-dir ./my_results`, `--engine opt`, `--fill-open-spots`)*
 
 You will see instant validation and an analytics report:
 ```text
-📦 Loading classes from: ./sample_data/classes.csv
-👥 Loading attendees from: ./sample_data/attendees.csv
+📁 Input Directory   : ./input_data
+📦 Loading classes   : ./input_data/classes.csv
+👥 Loading attendees : ./input_data/attendees.csv
    Loaded 11 classes and 35 attendees.
 ⚙️  Running Fair Multi-Round Priority Scheduler...
 ✅ Schedule validated: All hard constraints satisfied (0 overlaps, 0 capacity overflows)!

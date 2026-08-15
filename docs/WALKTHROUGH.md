@@ -61,13 +61,14 @@ Ran 18 tests in 0.025s
 OK
 ```
 
-### 2. End-to-End Execution on Realistic Sample Dataset
-Generated and scheduled **11 classes** and **35 attendees**:
+### 2. End-to-End Execution on Input Dataset
+Generated and scheduled **11 classes** and **35 attendees** directly from [`input_data/`](../input_data):
 ```text
-$ wellness-scheduler run --classes ./sample_data/classes.csv --attendees ./sample_data/attendees.csv --output-dir ./results
+$ wellness-scheduler run
 
-📦 Loading classes from: ./sample_data/classes.csv
-👥 Loading attendees from: ./sample_data/attendees.csv
+📁 Input Directory   : ./input_data
+📦 Loading classes   : ./input_data/classes.csv
+👥 Loading attendees : ./input_data/attendees.csv
    Loaded 11 classes and 35 attendees.
 ⚙️  Running Fair Multi-Round Priority Scheduler...
 ✅ Schedule validated: All hard constraints satisfied (0 overlaps, 0 capacity overflows)!
