@@ -53,20 +53,28 @@ class FairPriorityScheduler(BaseScheduler):
         att_sched: AttendeeSchedule,
         roster: ClassRoster,
     ) -> bool:
-        """Checks if attendee can legally be assigned to class without any conflict or overflow."""
+        """Checks if attendee can legally be assigned to class/fair without any conflict or overflow."""
         # Check capacity
         if roster.is_full:
             return False
 
-        # Check attendee max classes limit
-        if len(att_sched.assigned_classes) >= attendee.max_classes:
+        # Check specific category limits (regular class vs fair session)
+        if w_class.is_fair:
+            if len(att_sched.fair_events) >= attendee.max_fairs:
+                return False
+        else:
+            if len(att_sched.regular_classes) >= attendee.max_classes:
+                return False
+
+        # Check total events limit
+        if len(att_sched.assigned_classes) >= attendee.max_total_events:
             return False
 
         # Check duplicate assignment
         if any(c.id == w_class.id for c in att_sched.assigned_classes):
             return False
 
-        # Check time overlap with existing assigned classes
+        # Check time overlap with existing assigned classes/events
         for existing in att_sched.assigned_classes:
             if existing.timeslot.overlaps(w_class.timeslot):
                 return False
@@ -86,7 +94,7 @@ class FairPriorityScheduler(BaseScheduler):
         result: ScheduleResult,
     ) -> None:
         """Executes the assignment and updates rosters and attendee schedules."""
-        score = self.get_preference_score(rank)
+        score = self.get_preference_score(rank) if rank > 0 else (25.0 if w_class.is_fair else 10.0)
         assignment = Assignment(
             attendee_id=attendee.id,
             class_id=w_class.id,
@@ -110,9 +118,12 @@ class FairPriorityScheduler(BaseScheduler):
         attendees: List[Attendee],
         **kwargs,
     ) -> ScheduleResult:
-        """Runs the fair draft scheduling algorithm."""
+        """Runs the fair draft scheduling algorithm (2 classes + 1 Fair session per individual)."""
         result = self.initialize_result(classes, attendees)
         by_id, by_title = self.build_lookup_maps(classes)
+
+        fair_sessions = [c for c in classes if c.is_fair]
+        regular_classes = [c for c in classes if not c.is_fair]
 
         # Track which preferences have been processed / fulfilled
         processed_preferences: Dict[str, Set[str]] = {a.id: set() for a in attendees}
@@ -120,7 +131,7 @@ class FairPriorityScheduler(BaseScheduler):
         # Determine max number of preference rounds
         max_rounds = max((len(a.preferences) for a in attendees), default=0)
 
-        # Execute draft rounds (Round 1 = 1st choice, Round 2 = 2nd choice, etc.)
+        # Phase 1: Preference Draft Rounds
         for round_idx in range(max_rounds):
             rank = round_idx + 1
 
@@ -129,7 +140,7 @@ class FairPriorityScheduler(BaseScheduler):
 
             for attendee in attendees:
                 att_sched = result.attendee_schedules[attendee.id]
-                if len(att_sched.assigned_classes) >= attendee.max_classes:
+                if len(att_sched.assigned_classes) >= attendee.max_total_events:
                     continue
 
                 if round_idx >= len(attendee.preferences):
@@ -171,12 +182,11 @@ class FairPriorityScheduler(BaseScheduler):
                     # Everyone in candidate pool gets assigned
                     for attendee in candidates:
                         att_sched = result.attendee_schedules[attendee.id]
-                        # Double-check constraints in case attendee was assigned earlier in this round loop
                         if self._can_assign(attendee, w_class, att_sched, roster):
                             self._assign(attendee, w_class, rank, result)
                 else:
                     # Fair contention sorting:
-                    # 1. Attendees with fewest assigned classes so far
+                    # 1. Attendees with fewest assigned events so far
                     # 2. Attendees with lowest satisfaction score so far
                     # 3. Preservation of stable registration order
                     candidates.sort(
@@ -196,18 +206,44 @@ class FairPriorityScheduler(BaseScheduler):
                             if f"{w_class.title} (Class at capacity)" not in att_sched.unfulfilled_preferences:
                                 att_sched.unfulfilled_preferences.append(f"{w_class.title} (Class at capacity)")
 
-        # Optional: fill open remaining spots
+        # Phase 2: Fair Session Assignment (Guarantee 1 Fair session per individual)
+        if fair_sessions:
+            for attendee in attendees:
+                att_sched = result.attendee_schedules[attendee.id]
+                if len(att_sched.fair_events) >= attendee.max_fairs:
+                    continue
+
+                # Find candidate fair sessions that do not conflict with assigned classes
+                valid_fairs = [
+                    f_sess for f_sess in fair_sessions
+                    if self._can_assign(attendee, f_sess, att_sched, result.class_rosters[f_sess.id])
+                ]
+
+                if valid_fairs:
+                    # Balance load: Pick the Fair session with fewest enrolled attendees
+                    valid_fairs.sort(
+                        key=lambda f: (
+                            result.class_rosters[f.id].enrolled_count,
+                            f.timeslot.sort_key(),
+                        )
+                    )
+                    best_fair = valid_fairs[0]
+                    self._assign(attendee, best_fair, rank=0, result=result)
+                else:
+                    # If all non-conflicting fair sessions are full, record in unfulfilled
+                    att_sched.unfulfilled_preferences.append("Fair (No available non-conflicting spot)")
+
+        # Phase 3: Fill remaining open regular class spots if requested
         if self.fill_remaining_open_spots:
             for attendee in attendees:
                 att_sched = result.attendee_schedules[attendee.id]
-                if len(att_sched.assigned_classes) >= attendee.max_classes:
-                    continue
-                for w_class in classes:
-                    roster = result.class_rosters[w_class.id]
-                    if self._can_assign(attendee, w_class, att_sched, roster):
-                        self._assign(attendee, w_class, rank=0, result=result)
-                        if len(att_sched.assigned_classes) >= attendee.max_classes:
-                            break
+                if len(att_sched.regular_classes) < attendee.max_classes:
+                    for w_class in regular_classes:
+                        roster = result.class_rosters[w_class.id]
+                        if self._can_assign(attendee, w_class, att_sched, roster):
+                            self._assign(attendee, w_class, rank=0, result=result)
+                            if len(att_sched.regular_classes) >= attendee.max_classes:
+                                break
 
         # Compute summary scores
         total_score = sum(asgn.satisfaction_score for asgn in result.all_assignments)

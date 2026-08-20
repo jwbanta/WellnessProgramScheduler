@@ -74,22 +74,33 @@ class OptimizationScheduler(BaseScheduler):
             for c in classes:
                 if (a.id, c.id) in x:
                     rank = self._resolve_preference_rank(a, c)
-                    score = self.get_preference_score(rank) if rank > 0 else 1.0
+                    if rank > 0:
+                        score = self.get_preference_score(rank)
+                    else:
+                        score = 25.0 if c.is_fair else 1.0
                     objective_terms.append(score * x[(a.id, c.id)])
 
         prob += pulp.lpSum(objective_terms)
 
-        # Constraint 1: Class Capacities
+        # Constraint 1: Class / Fair Capacities
         for c in classes:
             class_vars = [x[(a.id, c.id)] for a in attendees if (a.id, c.id) in x]
             if class_vars:
                 prob += pulp.lpSum(class_vars) <= c.capacity, f"Cap_{c.id}"
 
-        # Constraint 2: Attendee Max Classes
+        # Constraint 2: Attendee Event Limits (2 Classes + 1 Fair = 3 Events)
         for a in attendees:
-            att_vars = [x[(a.id, c.id)] for c in classes if (a.id, c.id) in x]
-            if att_vars:
-                prob += pulp.lpSum(att_vars) <= a.max_classes, f"MaxClass_{a.id}"
+            reg_vars = [x[(a.id, c.id)] for c in classes if not c.is_fair and (a.id, c.id) in x]
+            if reg_vars:
+                prob += pulp.lpSum(reg_vars) <= a.max_classes, f"MaxClass_{a.id}"
+
+            fair_vars = [x[(a.id, c.id)] for c in classes if c.is_fair and (a.id, c.id) in x]
+            if fair_vars:
+                prob += pulp.lpSum(fair_vars) <= a.max_fairs, f"MaxFair_{a.id}"
+
+            total_vars = [x[(a.id, c.id)] for c in classes if (a.id, c.id) in x]
+            if total_vars:
+                prob += pulp.lpSum(total_vars) <= a.max_total_events, f"MaxTotal_{a.id}"
 
         # Constraint 3: No Overlapping Classes per Attendee
         for a in attendees:

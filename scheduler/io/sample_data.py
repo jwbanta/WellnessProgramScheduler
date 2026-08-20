@@ -10,8 +10,9 @@ from scheduler.models import Attendee, Timeslot, WellnessClass
 
 
 def get_sample_classes() -> List[WellnessClass]:
-    """Returns a curated list of realistic wellness program classes."""
+    """Returns a curated list of realistic wellness program classes and Fair sessions."""
     return [
+        # Block 1: 09:00 AM - 10:00 AM
         WellnessClass(
             id="C101",
             title="Morning Vinyasa Yoga",
@@ -43,6 +44,19 @@ def get_sample_classes() -> List[WellnessClass]:
             description="High-energy full body conditioning.",
         ),
         WellnessClass(
+            id="F100",
+            title="Interactive Wellness Fair & Expo (Morning Session)",
+            timeslot=Timeslot("09:00 AM", "10:00 AM", label="09:00 AM - 10:00 AM"),
+            capacity=15,
+            instructor="Wellness Team",
+            room="Grand Exhibition Hall",
+            category="Fair",
+            description="Interactive vendor exhibits, health screenings, and wellness demos.",
+            is_fair=True,
+        ),
+
+        # Block 2: 10:30 AM - 11:30 AM
+        WellnessClass(
             id="C201",
             title="Sound Bath Deep Relaxation",
             timeslot=Timeslot("10:30 AM", "11:30 AM", label="10:30 AM - 11:30 AM"),
@@ -72,6 +86,19 @@ def get_sample_classes() -> List[WellnessClass]:
             category="Nutrition",
             description="Evidence-based nutrition strategies for vibrant energy.",
         ),
+        WellnessClass(
+            id="F200",
+            title="Interactive Wellness Fair & Expo (Mid-Morning Session)",
+            timeslot=Timeslot("10:30 AM", "11:30 AM", label="10:30 AM - 11:30 AM"),
+            capacity=15,
+            instructor="Wellness Team",
+            room="Grand Exhibition Hall",
+            category="Fair",
+            description="Interactive vendor exhibits, health screenings, and wellness demos.",
+            is_fair=True,
+        ),
+
+        # Block 3: 01:00 PM - 02:00 PM
         WellnessClass(
             id="C301",
             title="Mindful Nature Walk",
@@ -103,6 +130,19 @@ def get_sample_classes() -> List[WellnessClass]:
             description="Relieve desk tension with functional mobility drills.",
         ),
         WellnessClass(
+            id="F300",
+            title="Interactive Wellness Fair & Expo (Afternoon Session)",
+            timeslot=Timeslot("01:00 PM", "02:00 PM", label="01:00 PM - 02:00 PM"),
+            capacity=15,
+            instructor="Wellness Team",
+            room="Grand Exhibition Hall",
+            category="Fair",
+            description="Interactive vendor exhibits, health screenings, and wellness demos.",
+            is_fair=True,
+        ),
+
+        # Block 4: 02:30 PM - 03:30 PM
+        WellnessClass(
             id="C401",
             title="Guided Aromatherapy & Nidra",
             timeslot=Timeslot("02:30 PM", "03:30 PM", label="02:30 PM - 03:30 PM"),
@@ -122,11 +162,22 @@ def get_sample_classes() -> List[WellnessClass]:
             category="Sound Therapy",
             description="Communal sound meditation and closing reflections.",
         ),
+        WellnessClass(
+            id="F400",
+            title="Interactive Wellness Fair & Expo (Closing Session)",
+            timeslot=Timeslot("02:30 PM", "03:30 PM", label="02:30 PM - 03:30 PM"),
+            capacity=15,
+            instructor="Wellness Team",
+            room="Grand Exhibition Hall",
+            category="Fair",
+            description="Interactive vendor exhibits, health screenings, and wellness demos.",
+            is_fair=True,
+        ),
     ]
 
 
 def get_sample_attendees(count: int = 35) -> List[Attendee]:
-    """Generates realistic sample attendees with ranked preferences across timeslot blocks."""
+    """Generates realistic sample attendees with ranked class preferences (target: 2 classes + 1 Fair)."""
     names = [
         ("Sophia", "Taylor"),
         ("Liam", "Smith"),
@@ -165,7 +216,7 @@ def get_sample_attendees(count: int = 35) -> List[Attendee]:
         ("Riley", "King"),
     ]
 
-    classes = get_sample_classes()
+    classes = [c for c in get_sample_classes() if not c.is_fair]
     timeslot_groups: List[List[WellnessClass]] = []
     seen_slots: List[str] = []
 
@@ -183,14 +234,12 @@ def get_sample_attendees(count: int = 35) -> List[Attendee]:
         att_id = f"ATT_{i+1:03d}"
         email = f"{first.lower()}.{last.lower()}@example.com"
 
-        # Pick 1 preferred class from each timeslot block in random order of interest
+        # Pick 1 preferred regular class from each timeslot block in random order of interest
         prefs: List[str] = []
-        # Sample an interest order
         for group in timeslot_groups:
             chosen = random.choice(group)
             prefs.append(chosen.title)
 
-        # Shuffle preference ranks slightly to simulate natural individual variations
         random.shuffle(prefs)
 
         attendees.append(
@@ -199,7 +248,8 @@ def get_sample_attendees(count: int = 35) -> List[Attendee]:
                 name=f"{first} {last}",
                 email=email,
                 preferences=prefs,
-                max_classes=3,
+                max_classes=2,
+                max_fairs=1,
             )
         )
 
@@ -243,6 +293,7 @@ def generate_sample_files(output_dir: str) -> Tuple[str, str]:
                 "name",
                 "email",
                 "max_classes",
+                "max_fairs",
                 "preference_1",
                 "preference_2",
                 "preference_3",
@@ -256,6 +307,7 @@ def generate_sample_files(output_dir: str) -> Tuple[str, str]:
                 "name": a.name,
                 "email": a.email,
                 "max_classes": a.max_classes,
+                "max_fairs": a.max_fairs,
             }
             for idx, p in enumerate(a.preferences, start=1):
                 row[f"preference_{idx}"] = p

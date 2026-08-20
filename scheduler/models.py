@@ -104,7 +104,7 @@ class Timeslot:
 
 @dataclass
 class WellnessClass:
-    """Represents a wellness class offering."""
+    """Represents a wellness class or Fair offering."""
 
     id: str
     title: str
@@ -114,6 +114,14 @@ class WellnessClass:
     room: str = ""
     category: str = ""
     description: str = ""
+    is_fair: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.is_fair:
+            cat = self.category.strip().lower() if self.category else ""
+            tit = self.title.strip().lower() if self.title else ""
+            if cat == "fair" or "fair" in tit or "expo" in tit:
+                self.is_fair = True
 
     def __str__(self) -> str:
         details = [self.title, str(self.timeslot)]
@@ -132,8 +140,13 @@ class Attendee:
     name: str
     email: str
     preferences: List[str] = field(default_factory=list)  # Ordered list of preferred class IDs or titles
-    max_classes: int = 10  # Maximum number of classes attendee wants/can take
+    max_classes: int = 2  # Maximum number of regular classes attendee wants/can take (default: 2)
+    max_fairs: int = 1  # Maximum number of Fair sessions attendee can take (default: 1)
     unavailable_timeslots: List[Timeslot] = field(default_factory=list)
+
+    @property
+    def max_total_events(self) -> int:
+        return self.max_classes + self.max_fairs
 
     @property
     def first_name(self) -> str:
@@ -148,7 +161,7 @@ class Attendee:
 
 @dataclass
 class Assignment:
-    """Represents the assignment of an attendee to a class."""
+    """Represents the assignment of an attendee to a class or fair."""
 
     attendee_id: str
     class_id: str
@@ -166,30 +179,53 @@ class AttendeeSchedule:
     unfulfilled_preferences: List[str] = field(default_factory=list)
 
     @property
-    def total_classes(self) -> int:
+    def total_events(self) -> int:
         return len(self.assigned_classes)
 
+    @property
+    def total_classes(self) -> int:
+        """Count of regular classes assigned (excluding Fair)."""
+        return len(self.regular_classes)
+
+    @property
+    def regular_classes(self) -> List[WellnessClass]:
+        """Assigned classes that are not Fair sessions."""
+        return [c for c in self.assigned_classes if not c.is_fair]
+
+    @property
+    def fair_events(self) -> List[WellnessClass]:
+        """Assigned Fair sessions."""
+        return [c for c in self.assigned_classes if c.is_fair]
+
+    @property
+    def fair_event(self) -> Optional[WellnessClass]:
+        """The single assigned Fair session, if any."""
+        fairs = self.fair_events
+        return fairs[0] if fairs else None
+
     def summary_text(self) -> str:
-        """Human-readable multi-line summary of assigned classes."""
+        """Human-readable multi-line summary of assigned events (classes + fair)."""
         if not self.assigned_classes:
-            return "No classes assigned."
+            return "No classes or events assigned."
         lines = []
-        # Sort assigned classes chronologically
+        # Sort assigned classes/events chronologically
         for c in sorted(self.assigned_classes, key=lambda x: (x.timeslot.day, x.timeslot.sort_key())):
             loc = f" ({c.room})" if c.room else ""
             inst = f" with {c.instructor}" if c.instructor else ""
-            lines.append(f"• {c.timeslot}: {c.title}{loc}{inst}")
+            tag = " [Fair]" if c.is_fair else ""
+            lines.append(f"• {c.timeslot}: {c.title}{tag}{loc}{inst}")
         return "\n".join(lines)
 
     def summary_html(self) -> str:
-        """HTML snippet representation of assigned classes."""
+        """HTML snippet representation of assigned events."""
         if not self.assigned_classes:
-            return "<p><em>No classes assigned.</em></p>"
+            return "<p><em>No classes or events assigned.</em></p>"
         items = []
         for c in sorted(self.assigned_classes, key=lambda x: (x.timeslot.day, x.timeslot.sort_key())):
             loc = f" <span style='color: #666;'>({c.room})</span>" if c.room else ""
             inst = f" <em>w/ {c.instructor}</em>" if c.instructor else ""
-            items.append(f"<li><strong>{c.timeslot}</strong> — {c.title}{loc}{inst}</li>")
+            badge = " <span style='background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 12px;'>Fair</span>" if c.is_fair else ""
+            items.append(f"<li><strong>{c.timeslot}</strong> — {c.title}{badge}{loc}{inst}</li>")
         return f"<ul style='margin: 0; padding-left: 20px;'>{''.join(items)}</ul>"
 
 

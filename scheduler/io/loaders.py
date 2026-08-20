@@ -74,6 +74,8 @@ def load_classes_from_csv(file_path: str) -> List[WellnessClass]:
             room = get_val("room", "location", "studio")
             category = get_val("category", "type")
             description = get_val("description", "details")
+            is_fair_str = get_val("is_fair", "fair")
+            is_fair = is_fair_str.lower() in ("true", "1", "yes", "t", "y") if is_fair_str else False
 
             classes.append(
                 WellnessClass(
@@ -85,6 +87,7 @@ def load_classes_from_csv(file_path: str) -> List[WellnessClass]:
                     room=room,
                     category=category,
                     description=description,
+                    is_fair=is_fair,
                 )
             )
 
@@ -99,7 +102,8 @@ def load_attendees_from_csv(file_path: str) -> List[Attendee]:
     - id / attendee_id / user_id
     - name / attendee_name / full_name (or first_name + last_name)
     - email / email_address
-    - max_classes / max_sessions / target_classes
+    - max_classes / max_sessions / target_classes (default: 2)
+    - max_fairs / max_fair / target_fairs (default: 1)
     - preferences / class_preferences (comma/semicolon/pipe separated list)
     - OR columnar preference ranks: preference_1, preference_2, preference_3... (or pref_1, choice_1, 1st_choice, etc.)
     """
@@ -130,11 +134,17 @@ def load_attendees_from_csv(file_path: str) -> List[Attendee]:
 
             email = get_val("email", "email_address", default=f"attendee{idx}@example.com")
 
-            max_cls_str = get_val("max_classes", "max_sessions", "target_classes", default="10")
+            max_cls_str = get_val("max_classes", "max_sessions", "target_classes", default="2")
             try:
                 max_classes = int(float(max_cls_str))
             except ValueError:
-                max_classes = 10
+                max_classes = 2
+
+            max_fair_str = get_val("max_fairs", "max_fair", "target_fairs", default="1")
+            try:
+                max_fairs = int(float(max_fair_str))
+            except ValueError:
+                max_fairs = 1
 
             # Gather preferences
             preferences: List[str] = []
@@ -142,9 +152,7 @@ def load_attendees_from_csv(file_path: str) -> List[Attendee]:
             # 1. Check for dedicated preference columns like preference_1, pref_1, choice_1, 1st_choice
             pref_columns: List[tuple[int, str]] = []
             for clean_key, orig_key in field_map.items():
-                # Match patterns like pref_1, preference_1, choice_1, 1st_choice, first_choice
                 if any(p in clean_key for p in ("pref_", "preference_", "choice_")):
-                    # extract number if present
                     import re
                     num_match = re.search(r"\d+", clean_key)
                     if num_match:
@@ -184,6 +192,7 @@ def load_attendees_from_csv(file_path: str) -> List[Attendee]:
                     email=email,
                     preferences=preferences,
                     max_classes=max_classes,
+                    max_fairs=max_fairs,
                     unavailable_timeslots=unavail_slots,
                 )
             )
@@ -218,6 +227,7 @@ def load_classes_from_json(file_path: str) -> List[WellnessClass]:
                 room=item.get("room", ""),
                 category=item.get("category", ""),
                 description=item.get("description", ""),
+                is_fair=item.get("is_fair", False),
             )
         )
     return classes
@@ -240,7 +250,8 @@ def load_attendees_from_json(file_path: str) -> List[Attendee]:
                 name=item["name"],
                 email=item["email"],
                 preferences=item.get("preferences", []),
-                max_classes=item.get("max_classes", 10),
+                max_classes=item.get("max_classes", 2),
+                max_fairs=item.get("max_fairs", 1),
                 unavailable_timeslots=unavail,
             )
         )

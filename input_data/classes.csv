@@ -2,11 +2,15 @@ class_id,title,start_time,end_time,capacity,instructor,room,category
 C101,Morning Vinyasa Yoga,09:00 AM,10:00 AM,12,Elena Vance,Studio A (Lotus),Yoga
 C102,Breathwork & Meditation,09:00 AM,10:00 AM,10,Marcus Chen,Studio B (Zen),Mindfulness
 C103,Functional HIIT & Core,09:00 AM,10:00 AM,8,Jake Miller,Fitness Studio,Fitness
+F100,Interactive Wellness Fair & Expo (Morning Session),09:00 AM,10:00 AM,15,Wellness Team,Grand Exhibition Hall,Fair
 C201,Sound Bath Deep Relaxation,10:30 AM,11:30 AM,15,Maya Lin,Studio B (Zen),Sound Therapy
 C202,Pilates Mat Flow,10:30 AM,11:30 AM,10,Sarah Jenkins,Studio A (Lotus),Pilates
 C203,Longevity & Nutrition Q&A,10:30 AM,11:30 AM,20,Dr. Rachel Green,Conference Hall,Nutrition
+F200,Interactive Wellness Fair & Expo (Mid-Morning Session),10:30 AM,11:30 AM,15,Wellness Team,Grand Exhibition Hall,Fair
 C301,Mindful Nature Walk,01:00 PM,02:00 PM,16,Liam O'Connor,Courtyard Garden,Outdoor
 C302,Restorative Yin Yoga,01:00 PM,02:00 PM,12,Elena Vance,Studio A (Lotus),Yoga
 C303,Mobility & Posture Workshop,01:00 PM,02:00 PM,10,Jake Miller,Fitness Studio,Fitness
+F300,Interactive Wellness Fair & Expo (Afternoon Session),01:00 PM,02:00 PM,15,Wellness Team,Grand Exhibition Hall,Fair
 C401,Guided Aromatherapy & Nidra,02:30 PM,03:30 PM,14,Maya Lin,Studio B (Zen),Mindfulness
 C402,Closing Sound Ceremony,02:30 PM,03:30 PM,20,Marcus Chen,Main Sanctuary,Sound Therapy
+F400,Interactive Wellness Fair & Expo (Closing Session),02:30 PM,03:30 PM,15,Wellness Team,Grand Exhibition Hall,Fair

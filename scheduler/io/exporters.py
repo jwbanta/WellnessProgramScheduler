@@ -18,17 +18,20 @@ def export_mail_merge_csv(result: ScheduleResult, file_path: str) -> None:
     - email, first_name, last_name, attendee_name, attendee_id
     - schedule_summary_text: Clean multi-line bulleted string
     - schedule_summary_html: Pre-styled HTML snippet for rich templates
-    - total_classes_assigned
-    - class_1_title, class_1_time, class_1_room, class_1_instructor ... class_N_*
+    - total_events_assigned: Total scheduled events (e.g. 3)
+    - total_classes_assigned: Total regular classes (e.g. 2)
+    - class_1_title, class_1_time, class_1_room, class_1_instructor
+    - class_2_title, class_2_time, class_2_room, class_2_instructor
+    - fair_title, fair_time, fair_room, fair_instructor
     - unfulfilled_preferences
     """
     os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
 
-    # Determine maximum number of assigned classes across any attendee (at least 3)
-    max_slots = 3
+    # Determine maximum number of regular classes and total events across attendees
+    max_regular_classes = 2
     for att_sched in result.attendee_schedules.values():
-        if len(att_sched.assigned_classes) > max_slots:
-            max_slots = len(att_sched.assigned_classes)
+        if len(att_sched.regular_classes) > max_regular_classes:
+            max_regular_classes = len(att_sched.regular_classes)
 
     # Build fieldnames
     fieldnames = [
@@ -39,16 +42,26 @@ def export_mail_merge_csv(result: ScheduleResult, file_path: str) -> None:
         "attendee_id",
         "schedule_summary_text",
         "schedule_summary_html",
+        "total_events_assigned",
         "total_classes_assigned",
     ]
 
-    for i in range(1, max_slots + 1):
+    # Explicit class_1 and class_2 columns
+    for i in range(1, max_regular_classes + 1):
         fieldnames.extend([
             f"class_{i}_title",
             f"class_{i}_time",
             f"class_{i}_room",
             f"class_{i}_instructor",
         ])
+
+    # Fair session columns
+    fieldnames.extend([
+        "fair_title",
+        "fair_time",
+        "fair_room",
+        "fair_instructor",
+    ])
 
     fieldnames.append("unfulfilled_preferences")
 
@@ -58,8 +71,9 @@ def export_mail_merge_csv(result: ScheduleResult, file_path: str) -> None:
 
         for att_id, att_sched in result.attendee_schedules.items():
             attendee = att_sched.attendee
-            # Sort assigned classes chronologically
-            sorted_classes = sorted(att_sched.assigned_classes, key=lambda c: (c.timeslot.day, c.timeslot.sort_key()))
+            # Sort assigned regular classes chronologically
+            sorted_classes = sorted(att_sched.regular_classes, key=lambda c: (c.timeslot.day, c.timeslot.sort_key()))
+            fair = att_sched.fair_event
 
             row: Dict[str, Any] = {
                 "email": attendee.email,
@@ -69,11 +83,12 @@ def export_mail_merge_csv(result: ScheduleResult, file_path: str) -> None:
                 "attendee_id": attendee.id,
                 "schedule_summary_text": att_sched.summary_text(),
                 "schedule_summary_html": att_sched.summary_html(),
+                "total_events_assigned": len(att_sched.assigned_classes),
                 "total_classes_assigned": len(sorted_classes),
                 "unfulfilled_preferences": "; ".join(att_sched.unfulfilled_preferences) if att_sched.unfulfilled_preferences else "None",
             }
 
-            for i in range(1, max_slots + 1):
+            for i in range(1, max_regular_classes + 1):
                 if i <= len(sorted_classes):
                     cls_obj = sorted_classes[i - 1]
                     row[f"class_{i}_title"] = cls_obj.title
@@ -86,6 +101,17 @@ def export_mail_merge_csv(result: ScheduleResult, file_path: str) -> None:
                     row[f"class_{i}_room"] = ""
                     row[f"class_{i}_instructor"] = ""
 
+            if fair:
+                row["fair_title"] = fair.title
+                row["fair_time"] = str(fair.timeslot)
+                row["fair_room"] = fair.room
+                row["fair_instructor"] = fair.instructor
+            else:
+                row["fair_title"] = ""
+                row["fair_time"] = ""
+                row["fair_room"] = ""
+                row["fair_instructor"] = ""
+
             writer.writerow(row)
 
 
@@ -96,6 +122,8 @@ def export_class_rosters_csv(result: ScheduleResult, file_path: str) -> None:
     fieldnames = [
         "class_id",
         "title",
+        "is_fair",
+        "category",
         "timeslot",
         "day",
         "room",
@@ -119,6 +147,8 @@ def export_class_rosters_csv(result: ScheduleResult, file_path: str) -> None:
             writer.writerow({
                 "class_id": class_id,
                 "title": w_class.title,
+                "is_fair": "Yes" if w_class.is_fair else "No",
+                "category": w_class.category,
                 "timeslot": str(w_class.timeslot),
                 "day": w_class.timeslot.day,
                 "room": w_class.room,
@@ -141,6 +171,7 @@ def export_master_schedule_csv(result: ScheduleResult, file_path: str) -> None:
     fieldnames = [
         "class_id",
         "class_title",
+        "event_type",
         "timeslot",
         "day",
         "room",
@@ -165,6 +196,7 @@ def export_master_schedule_csv(result: ScheduleResult, file_path: str) -> None:
             writer.writerow({
                 "class_id": w_class.id,
                 "class_title": w_class.title,
+                "event_type": "Fair" if w_class.is_fair else "Class",
                 "timeslot": str(w_class.timeslot),
                 "day": w_class.timeslot.day,
                 "room": w_class.room,
@@ -184,23 +216,24 @@ def export_email_templates(output_dir: str) -> Tuple[str, str]:
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    txt_content = """Subject: Your Personalized Wellness Program Schedule
+    txt_content = """Subject: Your Personalized Wellness Program Schedule (3 Scheduled Events)
 
 Hi {{first_name}},
 
-Thank you for registering for our upcoming Wellness Program! Based on your submitted preferences, here is your confirmed schedule:
+Thank you for registering for our upcoming Wellness Program! Based on your submitted preferences, here is your confirmed 3-event schedule (2 classes + 1 Fair session):
 
 ----------------------------------------------------
-YOUR CLASS SCHEDULE:
+YOUR CONFIRMED SCHEDULE:
 ----------------------------------------------------
 {{schedule_summary_text}}
 ----------------------------------------------------
 
-Total Classes Confirmed: {{total_classes_assigned}}
+Total Scheduled Events: {{total_events_assigned}} (2 Classes + 1 Fair)
 
 Important Reminders:
 • Please arrive 5-10 minutes before each session starts.
 • Bring a water bottle and comfortable attire.
+• During your scheduled Fair timeslot, explore interactive wellness booths, vendor demos, and biometric screenings.
 • If your schedule includes yoga or meditation, mats are provided on-site.
 
 If you have any questions or need to make a change, please reply to this email.
@@ -222,18 +255,18 @@ Wellness Program Team
     <tr>
       <td style="background: linear-gradient(135deg, #0d9488, #0284c7); padding: 32px 24px; text-align: center; color: #ffffff;">
         <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">🌿 Wellness Program Schedule</h1>
-        <p style="margin: 8px 0 0; font-size: 15px; opacity: 0.9;">Your confirmed class sessions & times</p>
+        <p style="margin: 8px 0 0; font-size: 15px; opacity: 0.9;">Your 3 Scheduled Events: 2 Classes + 1 Wellness Fair</p>
       </td>
     </tr>
     <tr>
       <td style="padding: 32px 28px;">
         <p style="font-size: 16px; margin: 0 0 16px;">Hi <strong>{{first_name}}</strong>,</p>
         <p style="font-size: 15px; line-height: 1.6; margin: 0 0 24px; color: #475569;">
-          Thank you for registering! We've built your personalized schedule based on your class preferences.
+          Thank you for registering! We've built your personalized schedule with 3 confirmed events: <strong>2 classes</strong> and <strong>1 Fair session</strong>.
         </p>
 
         <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <h2 style="margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #166534;">Your Confirmed Classes ({{total_classes_assigned}})</h2>
+          <h2 style="margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #166534;">Your Confirmed Schedule ({{total_events_assigned}} Events)</h2>
           <div style="font-size: 15px; line-height: 1.7; color: #1e293b;">
             {{schedule_summary_html}}
           </div>
@@ -244,7 +277,8 @@ Wellness Program Team
           <ul style="margin: 8px 0 0; padding-left: 20px;">
             <li>Please arrive 5–10 minutes prior to session start times.</li>
             <li>Wear comfortable clothing and bring a refillable water bottle.</li>
-            <li>Mats, blocks, and equipment will be sanitized and provided.</li>
+            <li>Explore vendor demos and wellness booths during your assigned Fair time.</li>
+            <li>Mats, blocks, and equipment will be sanitized and provided for classes.</li>
           </ul>
         </div>
 

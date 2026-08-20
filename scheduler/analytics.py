@@ -25,6 +25,9 @@ class ScheduleMetrics:
     full_classes_count: int = 0
     underfilled_classes_count: int = 0
     top_demanded_classes: List[str] = field(default_factory=list)
+    three_event_complete_count: int = 0
+    fair_assigned_count: int = 0
+    two_class_assigned_count: int = 0
 
     def summary_table(self) -> str:
         """Returns a formatted terminal text summary."""
@@ -33,11 +36,13 @@ class ScheduleMetrics:
             "             WELLNESS PROGRAM ANALYTICS SUMMARY            ",
             "===========================================================",
             f" Total Attendees Registered : {self.total_attendees}",
-            f" Successfully Scheduled     : {self.scheduled_attendees} ({(self.scheduled_attendees/self.total_attendees*100) if self.total_attendees else 0:.1f}%)",
+            f" Fully Scheduled (3 Events) : {self.three_event_complete_count} ({(self.three_event_complete_count/self.total_attendees*100) if self.total_attendees else 0:.1f}%)",
+            f" • 2 Classes Assigned       : {self.two_class_assigned_count} ({(self.two_class_assigned_count/self.total_attendees*100) if self.total_attendees else 0:.1f}%)",
+            f" • 1 Fair Session Assigned  : {self.fair_assigned_count} ({(self.fair_assigned_count/self.total_attendees*100) if self.total_attendees else 0:.1f}%)",
             f" Unassigned Attendees       : {self.unassigned_attendees}",
             f" Total Seats Filled         : {self.total_assigned_seats} / {self.total_capacity} ({self.overall_utilization_rate:.1f}% capacity)",
             f" Average Satisfaction Score : {self.average_satisfaction_score:.2f} / 100.0 (stddev: {self.satisfaction_score_stddev:.2f})",
-            f" 1st Choice Allocation Rate : {self.first_choice_satisfaction_rate:.1f}% of all assignments",
+            f" 1st Choice Allocation Rate : {self.first_choice_satisfaction_rate:.1f}% of all class assignments",
             "-----------------------------------------------------------",
             " Preference Rank Breakdown:",
         ]
@@ -45,10 +50,10 @@ class ScheduleMetrics:
             pct = (count / self.total_assigned_seats * 100) if self.total_assigned_seats > 0 else 0.0
             lines.append(f"   • {rank_label:<12}: {count:>4} seats ({pct:.1f}%)")
         lines.append("-----------------------------------------------------------")
-        lines.append(f" Classes at 100% Capacity   : {self.full_classes_count}")
-        lines.append(f" Underfilled Classes (<50%) : {self.underfilled_classes_count}")
+        lines.append(f" Classes/Sessions at Full Cap: {self.full_classes_count}")
+        lines.append(f" Underfilled Classes (<50%)  : {self.underfilled_classes_count}")
         if self.top_demanded_classes:
-            lines.append(f" High Contention Classes    : {', '.join(self.top_demanded_classes[:3])}")
+            lines.append(f" High Contention Classes     : {', '.join(self.top_demanded_classes[:3])}")
         lines.append("===========================================================")
         return "\n".join(lines)
 
@@ -56,8 +61,21 @@ class ScheduleMetrics:
 def calculate_metrics(result: ScheduleResult) -> ScheduleMetrics:
     """Computes comprehensive analytics for a ScheduleResult."""
     total_attendees = len(result.attendee_schedules)
-    scheduled_attendees = sum(1 for s in result.attendee_schedules.values() if s.total_classes > 0)
+    scheduled_attendees = sum(1 for s in result.attendee_schedules.values() if s.total_events > 0)
     unassigned_attendees = total_attendees - scheduled_attendees
+
+    three_event_complete = sum(
+        1 for s in result.attendee_schedules.values()
+        if len(s.regular_classes) >= s.attendee.max_classes and len(s.fair_events) >= s.attendee.max_fairs
+    )
+    two_class_complete = sum(
+        1 for s in result.attendee_schedules.values()
+        if len(s.regular_classes) >= s.attendee.max_classes
+    )
+    fair_complete = sum(
+        1 for s in result.attendee_schedules.values()
+        if len(s.fair_events) >= s.attendee.max_fairs
+    )
 
     total_assigned_seats = len(result.all_assignments)
     total_capacity = sum(r.wellness_class.capacity for r in result.class_rosters.values())
@@ -79,24 +97,34 @@ def calculate_metrics(result: ScheduleResult) -> ScheduleMetrics:
         "2nd Choice": 0,
         "3rd Choice": 0,
         "4th+ Choice": 0,
-        "Unranked/Open": 0,
+        "Fair Session": 0,
+        "Open/Unranked": 0,
     }
 
     first_choice_count = 0
+    regular_assigned_count = 0
     for asgn in result.all_assignments:
-        if asgn.preference_rank == 1:
+        w_class = result.class_rosters[asgn.class_id].wellness_class
+        if w_class.is_fair:
+            rank_counts["Fair Session"] += 1
+        elif asgn.preference_rank == 1:
             rank_counts["1st Choice"] += 1
             first_choice_count += 1
+            regular_assigned_count += 1
         elif asgn.preference_rank == 2:
             rank_counts["2nd Choice"] += 1
+            regular_assigned_count += 1
         elif asgn.preference_rank == 3:
             rank_counts["3rd Choice"] += 1
+            regular_assigned_count += 1
         elif asgn.preference_rank >= 4:
             rank_counts["4th+ Choice"] += 1
+            regular_assigned_count += 1
         else:
-            rank_counts["Unranked/Open"] += 1
+            rank_counts["Open/Unranked"] += 1
+            regular_assigned_count += 1
 
-    first_choice_rate = (first_choice_count / total_assigned_seats * 100) if total_assigned_seats > 0 else 0.0
+    first_choice_rate = (first_choice_count / regular_assigned_count * 100) if regular_assigned_count > 0 else 0.0
 
     # Class capacity metrics
     full_count = 0
@@ -125,4 +153,7 @@ def calculate_metrics(result: ScheduleResult) -> ScheduleMetrics:
         full_classes_count=full_count,
         underfilled_classes_count=underfilled_count,
         top_demanded_classes=contended_classes,
+        three_event_complete_count=three_event_complete,
+        fair_assigned_count=fair_complete,
+        two_class_assigned_count=two_class_complete,
     )

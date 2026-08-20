@@ -49,11 +49,26 @@ class ScheduleValidator:
             attendee = att_sched.attendee
             assigned_classes = att_sched.assigned_classes
 
-            # Check max classes
-            if len(assigned_classes) > attendee.max_classes:
+            # Check limits for regular classes, fairs, and total events
+            reg_classes = att_sched.regular_classes
+            fair_events = att_sched.fair_events
+
+            if len(reg_classes) > attendee.max_classes:
                 errors.append(
                     f"Max classes exceeded: Attendee '{attendee.name}' (ID: {attendee_id}) is assigned to "
-                    f"{len(assigned_classes)} classes (max permitted: {attendee.max_classes})."
+                    f"{len(reg_classes)} regular classes (max permitted: {attendee.max_classes})."
+                )
+
+            if len(fair_events) > attendee.max_fairs:
+                errors.append(
+                    f"Max fairs exceeded: Attendee '{attendee.name}' (ID: {attendee_id}) is assigned to "
+                    f"{len(fair_events)} Fair sessions (max permitted: {attendee.max_fairs})."
+                )
+
+            if len(assigned_classes) > attendee.max_total_events:
+                errors.append(
+                    f"Max total events exceeded: Attendee '{attendee.name}' (ID: {attendee_id}) is assigned to "
+                    f"{len(assigned_classes)} events (max permitted: {attendee.max_total_events})."
                 )
 
             # Check for duplicate class assignments
